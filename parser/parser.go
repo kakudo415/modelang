@@ -40,7 +40,7 @@ func (p *Parser) parseExprLv2() (n Node) {
 	n.Token = p.current
 	n.Child = append(n.Child, left)
 	p.forward()
-	n.Child = append(n.Child, p.parseExprLv1())
+	n.Child = append(n.Child, p.parseExprLv2())
 	return n
 }
 
@@ -52,7 +52,7 @@ func (p *Parser) parseExprLv1() (n Node) {
 	n.Token = p.current
 	n.Child = append(n.Child, left)
 	p.forward()
-	n.Child = append(n.Child, p.parseExprLv0())
+	n.Child = append(n.Child, p.parseExprLv1())
 	return n
 }
 
