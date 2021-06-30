@@ -30,6 +30,9 @@ const (
 	SUB
 	MUL
 	QUO
+
+	LPAREN
+	RPAREN
 )
 
 func (s *Scanner) Init(src []byte) {
@@ -37,32 +40,32 @@ func (s *Scanner) Init(src []byte) {
 	s.forward()
 }
 
-func (s *Scanner) Scan() []Token {
-	var ts []Token
-	for !s.isEOF() {
-		switch {
-		case s.isSpace():
-			s.forward()
-		case s.isNumber():
-			ts = append(ts, s.scanNumber())
-		case s.ch == '+':
-			ts = append(ts, Token{Type: ADD, Pos: s.pos, Raw: "+"})
-			s.forward()
-		case s.ch == '-':
-			ts = append(ts, Token{Type: SUB, Pos: s.pos, Raw: "-"})
-			s.forward()
-		case s.ch == '*':
-			ts = append(ts, Token{Type: MUL, Pos: s.pos, Raw: "*"})
-			s.forward()
-		case s.ch == '/':
-			ts = append(ts, Token{Type: QUO, Pos: s.pos, Raw: "/"})
-			s.forward()
-		default:
-			panic("UNKNOWN TOKEN")
-		}
+func (s *Scanner) Scan() Token {
+	var t Token
+	switch {
+	case s.isEOF():
+		return Token{Type: EOF, Pos: s.pos}
+	case s.isSpace():
+		s.forward()
+		return s.Scan()
+	case s.isNumber():
+		t = s.scanNumber()
+	case s.ch == '+':
+		t = s.scanOp(ADD)
+	case s.ch == '-':
+		t = s.scanOp(SUB)
+	case s.ch == '*':
+		t = s.scanOp(MUL)
+	case s.ch == '/':
+		t = s.scanOp(QUO)
+	case s.ch == '(':
+		t = s.scanOp(LPAREN)
+	case s.ch == ')':
+		t = s.scanOp(RPAREN)
+	default:
+		panic("UNKNOWN TOKEN")
 	}
-	ts = append(ts, Token{Type: EOF, Pos: s.pos})
-	return ts
+	return t
 }
 
 func (s *Scanner) forward() {
@@ -99,5 +102,14 @@ func (s *Scanner) scanNumber() Token {
 		t.Raw += string(s.ch)
 		s.forward()
 	}
+	return t
+}
+
+func (s *Scanner) scanOp(tt TokenType) Token {
+	var t Token
+	t.Type = tt
+	t.Pos = s.pos
+	t.Raw = string(s.ch)
+	s.forward()
 	return t
 }

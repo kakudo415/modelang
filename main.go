@@ -1,16 +1,22 @@
 package main
 
 import (
-	"fmt"
-
+	"github.com/kakudo415/modelang/parser"
 	"github.com/kakudo415/modelang/scanner"
 )
 
 func main() {
 	s := new(scanner.Scanner)
-	s.Init([]byte("1 + 23*456"))
-	ts := s.Scan()
-	for _, t := range ts {
-		fmt.Println(t.Raw)
+	s.Init([]byte("4 + 3 * (2 - 1)"))
+	p := new(parser.Parser)
+	p.Init(*s)
+	expr := p.Parse()
+	showExpr(expr)
+}
+
+func showExpr(root parser.Node) {
+	print(root.Token.Raw)
+	for _, child := range root.Child {
+		showExpr(child)
 	}
 }
