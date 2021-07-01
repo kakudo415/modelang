@@ -16,7 +16,7 @@ func (p *Parser) Parse() Node {
 	switch p.current.Type {
 	case scanner.EOF:
 		return EOF{Token: p.current}
-	case scanner.NUMBER:
+	case scanner.NUMBER, scanner.LPAREN, scanner.ADD, scanner.SUB:
 		return p.parseExpr()
 	default:
 		panic("UNKNOWN TOKEN")
@@ -60,15 +60,23 @@ func (p *Parser) parseBinaryExpr_MUL_QUO() Expr {
 }
 
 func (p *Parser) parseOperand() Expr {
-	if p.current.Type != scanner.LPAREN {
-		defer p.forward()
-		return Operand{X: p.current}
+	if p.current.Type == scanner.LPAREN {
+		p.forward()
+		e := p.parseExpr()
+		if p.current.Type != scanner.RPAREN {
+			panic("PAREN IS NOT MATCHED")
+		}
+		p.forward()
+		return e
 	}
-	p.forward()
-	e := p.parseExpr()
-	if p.current.Type != scanner.RPAREN {
-		panic("PAREN IS NOT MATCHED")
+
+	var unary string
+	if p.current.Type == scanner.ADD || p.current.Type == scanner.SUB {
+		unary = p.current.Raw
+		p.forward()
 	}
+	token := p.current
+	token.Raw = unary + token.Raw
 	p.forward()
-	return e
+	return Operand{X: token}
 }

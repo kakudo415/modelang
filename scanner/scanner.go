@@ -98,7 +98,11 @@ func (s *Scanner) scanNumber() Token {
 	var t Token
 	t.Type = NUMBER
 	t.Pos = s.pos
-	for s.isNumber() {
+	haveSeenDot := false
+	for s.isNumber() || (!haveSeenDot && s.ch == '.') {
+		if s.ch == '.' {
+			haveSeenDot = true
+		}
 		t.Raw += string(s.ch)
 		s.forward()
 	}
