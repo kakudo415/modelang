@@ -20,7 +20,7 @@ func (p *Parser) Init(s scanner.Scanner) {
 func (p *Parser) Parse() Node {
 	switch p.current.Type {
 	case scanner.EOF:
-		return Node{}
+		return Node{Token: p.current}
 	case scanner.NUMBER:
 		return p.parseExprLv2()
 	default:
@@ -34,26 +34,28 @@ func (p *Parser) forward() {
 
 func (p *Parser) parseExprLv2() (n Node) {
 	left := p.parseExprLv1()
-	if p.current.Type != scanner.ADD && p.current.Type != scanner.SUB {
-		return left
+	for p.current.Type == scanner.ADD || p.current.Type == scanner.SUB {
+		n = Node{Token: p.current}
+		p.forward()
+		right := p.parseExprLv1()
+		n.Child = append(n.Child, left)
+		n.Child = append(n.Child, right)
+		left = n
 	}
-	n.Token = p.current
-	n.Child = append(n.Child, left)
-	p.forward()
-	n.Child = append(n.Child, p.parseExprLv2())
-	return n
+	return left
 }
 
 func (p *Parser) parseExprLv1() (n Node) {
 	left := p.parseExprLv0()
-	if p.current.Type != scanner.MUL && p.current.Type != scanner.QUO {
-		return left
+	for p.current.Type == scanner.MUL || p.current.Type == scanner.QUO {
+		n = Node{Token: p.current}
+		p.forward()
+		right := p.parseExprLv0()
+		n.Child = append(n.Child, left)
+		n.Child = append(n.Child, right)
+		left = n
 	}
-	n.Token = p.current
-	n.Child = append(n.Child, left)
-	p.forward()
-	n.Child = append(n.Child, p.parseExprLv1())
-	return n
+	return left
 }
 
 func (p *Parser) parseExprLv0() (n Node) {
