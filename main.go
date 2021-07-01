@@ -1,14 +1,20 @@
 package main
 
 import (
+	"bufio"
+	"os"
+
 	"github.com/kakudo415/modelang/executor"
 	"github.com/kakudo415/modelang/parser"
 	"github.com/kakudo415/modelang/scanner"
 )
 
 func main() {
+	var src []byte
+	readline(&src)
+
 	s := new(scanner.Scanner)
-	s.Init([]byte("4 + 3 * (2 - 1) / 5 + 2 - 3 / 6 + 5"))
+	s.Init(src)
 	p := new(parser.Parser)
 	p.Init(*s)
 	e := new(executor.Executor)
@@ -21,9 +27,11 @@ func main() {
 	}
 }
 
-func showExpr(root parser.Node) {
-	print(root.Token.Raw)
-	for _, child := range root.Child {
-		showExpr(child)
+func readline(dest *[]byte) {
+	var err error
+	reader := bufio.NewReaderSize(os.Stdin, 4096)
+	*dest, _, err = reader.ReadLine()
+	if err != nil {
+		panic("CANNOT READ FROM TERMINAL")
 	}
 }

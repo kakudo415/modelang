@@ -7,11 +7,6 @@ type Parser struct {
 	current scanner.Token
 }
 
-type Node struct {
-	Token scanner.Token
-	Child []Node
-}
-
 func (p *Parser) Init(s scanner.Scanner) {
 	p.scanner = s
 	p.forward()
@@ -20,9 +15,9 @@ func (p *Parser) Init(s scanner.Scanner) {
 func (p *Parser) Parse() Node {
 	switch p.current.Type {
 	case scanner.EOF:
-		return Node{Token: p.current}
+		return EOF{Token: p.current}
 	case scanner.NUMBER:
-		return p.parseExprLv2()
+		return p.parseExpr()
 	default:
 		panic("UNKNOWN TOKEN")
 	}
@@ -32,42 +27,48 @@ func (p *Parser) forward() {
 	p.current = p.scanner.Scan()
 }
 
-func (p *Parser) parseExprLv2() (n Node) {
-	left := p.parseExprLv1()
+func (p *Parser) parseExpr() Expr {
+	return p.parseBinaryExpr_ADD_SUB()
+}
+
+func (p *Parser) parseBinaryExpr_ADD_SUB() Expr {
+	l := p.parseBinaryExpr_MUL_QUO()
 	for p.current.Type == scanner.ADD || p.current.Type == scanner.SUB {
-		n = Node{Token: p.current}
+		var e BinaryExpr
+		e.Op = p.current
 		p.forward()
-		right := p.parseExprLv1()
-		n.Child = append(n.Child, left)
-		n.Child = append(n.Child, right)
-		left = n
+		r := p.parseBinaryExpr_MUL_QUO()
+		e.L = l
+		e.R = r
+		l = e
 	}
-	return left
+	return l
 }
 
-func (p *Parser) parseExprLv1() (n Node) {
-	left := p.parseExprLv0()
+func (p *Parser) parseBinaryExpr_MUL_QUO() Expr {
+	l := p.parseOperand()
 	for p.current.Type == scanner.MUL || p.current.Type == scanner.QUO {
-		n = Node{Token: p.current}
+		var e BinaryExpr
+		e.Op = p.current
 		p.forward()
-		right := p.parseExprLv0()
-		n.Child = append(n.Child, left)
-		n.Child = append(n.Child, right)
-		left = n
+		r := p.parseOperand()
+		e.L = l
+		e.R = r
+		l = e
 	}
-	return left
+	return l
 }
 
-func (p *Parser) parseExprLv0() (n Node) {
+func (p *Parser) parseOperand() Expr {
 	if p.current.Type != scanner.LPAREN {
 		defer p.forward()
-		return Node{Token: p.current}
+		return Operand{X: p.current}
 	}
 	p.forward()
-	n = p.parseExprLv2()
+	e := p.parseExpr()
 	if p.current.Type != scanner.RPAREN {
 		panic("PAREN IS NOT MATCHED")
 	}
 	p.forward()
-	return n
+	return e
 }

@@ -20,17 +20,14 @@ func (e *Executor) Init(p parser.Parser) {
 }
 
 func (e *Executor) Execute() error {
-	switch e.current.Token.Type {
-	case scanner.EOF:
+	switch n := e.current.(type) {
+	case parser.EOF:
 		fmt.Printf("EOF\n")
 		return errors.New("EOF")
-	case scanner.NUMBER:
-		fmt.Printf("%s\n", e.current.Token.Raw)
-	case scanner.ADD, scanner.SUB, scanner.MUL, scanner.QUO:
-		fmt.Printf("%f\n", e.executeExpr(e.current))
+	case parser.Expr:
+		fmt.Printf("%f\n", e.calcExpr(n))
 	default:
-		println(e.current.Token.Type)
-		println(e.current.Token.Pos)
+		fmt.Printf("%d\n", n.Pos())
 		panic("UNKNOWN NODE")
 	}
 	e.forward()
@@ -41,27 +38,36 @@ func (e *Executor) forward() {
 	e.current = e.parser.Parse()
 }
 
-func (e *Executor) executeExpr(root parser.Node) float64 {
-	switch root.Token.Type {
-	case scanner.NUMBER:
-		num, err := strconv.ParseFloat(root.Token.Raw, 64)
+func (e *Executor) calcExpr(root parser.Expr) float64 {
+	switch expr := root.(type) {
+	case parser.BinaryExpr:
+		return e.calcBinaryExpr(expr)
+	case parser.Operand:
+		num, err := strconv.ParseFloat(expr.X.Raw, 64)
 		if err != nil {
 			panic(err)
 		}
 		return num
+	default:
+		panic("UNKNOWN EXPRESSION")
+	}
+}
+
+func (e *Executor) calcBinaryExpr(root parser.BinaryExpr) float64 {
+	switch root.Op.Type {
 	case scanner.ADD:
-		ans := e.executeExpr(root.Child[0]) + e.executeExpr(root.Child[1])
+		ans := e.calcExpr(root.L) + e.calcExpr(root.R)
 		return ans
 	case scanner.SUB:
-		ans := e.executeExpr(root.Child[0]) - e.executeExpr(root.Child[1])
+		ans := e.calcExpr(root.L) - e.calcExpr(root.R)
 		return ans
 	case scanner.MUL:
-		ans := e.executeExpr(root.Child[0]) * e.executeExpr(root.Child[1])
+		ans := e.calcExpr(root.L) * e.calcExpr(root.R)
 		return ans
 	case scanner.QUO:
-		ans := e.executeExpr(root.Child[0]) / e.executeExpr(root.Child[1])
+		ans := e.calcExpr(root.L) / e.calcExpr(root.R)
 		return ans
 	default:
-		panic("UNKNOWN NODE")
+		panic("UNKNOWN BINARY OPERATOR")
 	}
 }
